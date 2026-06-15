@@ -98,6 +98,21 @@ export default function Dashboard() {
     }
   };
 
+  const refreshProfileAndCalendar = async (authToken) => {
+    try {
+      const headers = { Authorization: `Bearer ${authToken}` };
+      const profileRes = await fetch(`${API_BASE_URL}/profile/me`, { headers });
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        setProfile(profileData);
+        setUser(profileData);
+      }
+      fetchCalendar(authToken);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // --- API Fetch Helpers ---
   const fetchCalendar = async (authToken) => {
     const res = await fetch(`${API_BASE_URL}/profile/calendar`, {
@@ -204,9 +219,10 @@ export default function Dashboard() {
         throw new Error(data.detail || "Failed to borrow book.");
       }
       
-      // Success: Close and refresh
+      // Success: Close and refresh profile, calendar, and books
       setBorrowModalBook(null);
-      fetchInitialData(token);
+      await refreshProfileAndCalendar(token);
+      fetchBooks(token, bookQuery);
     } catch (err) {
       setBorrowError(err.message);
     }
@@ -219,7 +235,8 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        fetchInitialData(token);
+        await refreshProfileAndCalendar(token);
+        fetchBooks(token, bookQuery);
       }
     } catch (err) {
       console.error(err);
@@ -242,7 +259,7 @@ export default function Dashboard() {
         body: JSON.stringify({ day }),
       });
       if (res.ok) {
-        fetchInitialData(token);
+        await refreshProfileAndCalendar(token);
       }
     } catch (err) {
       console.error(err);
@@ -272,7 +289,7 @@ export default function Dashboard() {
         body: JSON.stringify({ event_id: eventId }),
       });
       if (res.ok) {
-        fetchInitialData(token);
+        await refreshProfileAndCalendar(token);
       }
     } catch (err) {
       console.error(err);
